@@ -1,8 +1,0 @@
-{
-  "/admin/attendance/page": "app/admin/attendance/page.js",
-  "/student/login/page": "app/student/login/page.js",
-  "/page": "app/page.js",
-  "/student/dashboard/page": "app/student/dashboard/page.js",
-  "/student/profile/page": "app/student/profile/page.js",
-  "/student/events/page": "app/student/events/page.js"
-}
