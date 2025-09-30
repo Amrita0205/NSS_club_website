@@ -1,0 +1,9 @@
+@echo off
+echo Starting NSS Backend Server...
+cd backend
+echo Current directory: %CD%
+echo Installing dependencies...
+npm install
+echo Starting development server...
+npm run dev
+pause 
