@@ -118,7 +118,7 @@ router.get('/:eventId/attendance', adminAuth, getEventAttendance);
  * @desc    Manually add student to event
  * @access  Private (Admin)
  */
-router.post('/:eventId/manual-add', [
+router.post('/event/:eventId/manual-add', [
   adminAuth,
   body('studentId')
     .isMongoId()

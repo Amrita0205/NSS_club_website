@@ -246,7 +246,15 @@ export default function AdminDashboard() {
           priority
         />
       </div>
-      <AdminHeader active="dashboard" adminName={admin.name} adminId={admin._id || 'default'} onLogout={handleLogout} />
+      {/* <AdminHeader active="dashboard" adminName={admin.name} adminId={admin._id || 'default'} onLogout={handleLogout} /> */}
+      <div className="min-h-screen bg-black text-white flex flex-col">
+  <AdminHeader
+    active="dashboard"
+    adminName={admin.name}
+    adminId={admin._id || 'default'}
+    onLogout={handleLogout}
+  />
+</div>
 
       {/* Main Content */}
       <main className="flex-1 px-6 py-8">

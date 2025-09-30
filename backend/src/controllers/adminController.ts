@@ -1104,38 +1104,112 @@ export const getEventAttendance = async (req: Request, res: Response): Promise<v
  * @route   POST /api/admin/add-student-to-event
  * @access  Private (Admin)
  */
-export const addStudentToEvent = async (req: Request, res: Response): Promise<void> => {
+export const manualAddStudent = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { rollNo, eventId, hours } = req.body;
-    if (!rollNo || !eventId) {
-      res.status(400).json({ success: false, message: 'rollNo and eventId are required' });
+    const { eventId } = req.params;
+    const { studentId, hours } = req.body;
+
+    if (!mongoose.Types.ObjectId.isValid(eventId) || !mongoose.Types.ObjectId.isValid(studentId)) {
+      res.status(400).json({
+        success: false,
+        message: 'Invalid event ID or student ID'
+      } as ApiResponse);
       return;
     }
-    const student = await Student.findOne({ rollNo: rollNo.toUpperCase() });
-    const event = await Event.findById(eventId);
-    if (!student || !event) {
-      res.status(404).json({ success: false, message: 'Student or event not found' });
+
+    const [event, student] = await Promise.all([
+      Event.findById(eventId),
+      Student.findById(studentId)
+    ]);
+
+    if (!event) {
+      res.status(404).json({
+        success: false,
+        message: 'Event not found'
+      } as ApiResponse);
       return;
     }
-    // Add or update event attendance for student
-    const existingEvent = student.events.find(e => e.eventId.toString() === eventId);
-    const eventHours = typeof hours === 'number' ? hours : event.givenHours;
-    if (existingEvent) {
-      existingEvent.hours = eventHours;
-      existingEvent.attendedAt = new Date();
-    } else {
-      student.addEvent(event._id as mongoose.Types.ObjectId, eventHours);
+
+    if (!student) {
+      res.status(404).json({
+        success: false,
+        message: 'Student not found'
+      } as ApiResponse);
+      return;
     }
-    // Add student to event attendees if not already present
-    if (!event.attendees.includes(student._id as mongoose.Types.ObjectId)) {
-      event.attendees.push(student._id as mongoose.Types.ObjectId);
+
+    if (!student.approved) {
+      res.status(400).json({
+        success: false,
+        message: 'Student is not approved yet'
+      } as ApiResponse);
+      return;
     }
+
+    // Check if student is already in the event
+    const alreadyAttended = student.events.some(
+      e => e.eventId.toString() === eventId
+    );
+
+    if (alreadyAttended) {
+      res.status(400).json({
+        success: false,
+        message: 'Student has already attended this event'
+      } as ApiResponse);
+      return;
+    }
+
+    // Add student to event
+    const hoursToAdd = hours || event.givenHours;
+    
+    // Use the addEvent method from the Student model
+    (student as any).addEvent(new mongoose.Types.ObjectId(eventId), hoursToAdd);
     await student.save();
+
+    // Add student to event attendees
+    event.attendees.push(new mongoose.Types.ObjectId(studentId));
     await event.save();
-    res.status(200).json({ success: true, message: 'Student added to event successfully' });
+
+    logger.info(`Student ${student.rollNo} manually added to event ${event.name} by admin ${req.admin?.id}`);
+
+    res.status(200).json({
+      success: true,
+      message: 'Student added to event successfully',
+      data: {
+        student: {
+          name: student.name,
+          rollNo: student.rollNo
+        },
+        event: {
+          name: event.name,
+          date: event.date
+        },
+        hoursAdded: hoursToAdd,
+        newTotalHours: student.totalHours
+      }
+    } as ApiResponse);
+
+    // Notify student best-effort
+    try {
+      const note = new Notification({
+        userId: (student._id as any).toString(),
+        userType: 'student',
+        title: 'Added to Event',
+        message: `You were added to ${event.name}. Hours credited: ${hoursToAdd}.`,
+        type: 'success',
+        link: '/student/dashboard'
+      });
+      await note.save();
+    } catch (e) {
+      logger.error('Error creating manual-add notification for student:', e);
+    }
+
   } catch (error) {
-    logger.error('Error in addStudentToEvent:', error);
-    res.status(500).json({ success: false, message: 'Internal server error' });
+    logger.error('Error in manualAddStudent:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    } as ApiResponse);
   }
 };
 

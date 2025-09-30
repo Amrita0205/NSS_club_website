@@ -14,11 +14,6 @@ import { studentAuth } from '../middlewares/studentAuth';
 
 const router = express.Router();
 
-/**
- * @route   POST /api/student/register
- * @desc    Register a new student for NSS
- * @access  Public
- */
 router.post('/register', [
   body('name')
     .trim()

@@ -130,44 +130,61 @@ const completed = allEvents.filter((event: EventType) => event.isCompleted || ne
   };
 
   const addManualAttendance = async () => {
-    if (!attendanceEventId || !manualStudentId || manualHours <= 0) {
-      setMessage('Please fill all fields correctly');
+  if (!attendanceEventId || !manualStudentId || manualHours <= 0) {
+    setMessage('Please fill all fields correctly');
+    return;
+  }
+
+  try {
+    setAddingManual(true);
+
+    // Step 1: Get student ObjectId from roll number
+    const studentRes = await axios.get(
+      `http://localhost:5000/api/admin/students?rollNo=${manualStudentId}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    const student = studentRes.data?.data?.students?.[0];
+    if (!student || !student._id) {
+      setMessage('Student not found');
+      setAddingManual(false);
       return;
     }
 
-    try {
-      setAddingManual(true);
-      const res = await axios.post(`http://localhost:5000/api/event/${attendanceEventId}/manual-add`, {
-        studentId: manualStudentId,
+    // Step 2: Add manual attendance using ObjectId
+    const res = await axios.post(
+      `http://localhost:5000/api/event/${attendanceEventId}/manual-add`,
+      {
+        studentId: student._id,
         hours: manualHours
-      }, {
+      },
+      {
         headers: { Authorization: `Bearer ${token}` }
-      });
-
-      if (res.data.success) {
-        setMessage('Student added to event successfully');
-        setManualStudentId('');
-        setManualHours(0);
-        // Refresh attendance data
-        if (attendanceEventId) {
-          try {
-            const fresh = await axios.get(`http://localhost:5000/api/event/${attendanceEventId}/attendance`, { 
-              headers: { Authorization: `Bearer ${token}` } 
-            });
-            setAttendance(fresh.data?.data || null);
-          } catch {}
-        }
-        // Trigger global refresh
-        triggerRefresh();
-      } else {
-        setMessage(res.data.message || 'Failed to add student');
       }
-    } catch (error: any) {
-      setMessage(error.response?.data?.message || 'Failed to add student');
-    } finally {
-      setAddingManual(false);
+    );
+
+    if (res.data.success) {
+      setMessage('Student added to event successfully');
+      setManualStudentId('');
+      setManualHours(0);
+      // Refresh attendance data
+      if (attendanceEventId) {
+        try {
+          const fresh = await axios.get(`http://localhost:5000/api/event/${attendanceEventId}/attendance`, { 
+            headers: { Authorization: `Bearer ${token}` } 
+          });
+          setAttendance(fresh.data?.data || null);
+        } catch {}
+      }
+      triggerRefresh();
+    } else {
+      setMessage(res.data.message || 'Failed to add student');
     }
-  };
+  } catch (error: any) {
+    setMessage(error.response?.data?.message || 'Failed to add student');
+  } finally {
+    setAddingManual(false);
+  }
+};
 
   const markEventAsCompleted = async (eventId: string) => {
     if (!confirm('Are you sure you want to mark this event as completed?')) {

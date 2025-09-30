@@ -13,16 +13,15 @@ import {
   exportStudents,
   getHoursReport,
   bulkExport,
-
   getEventAttendance,
-  addStudentToEvent,
   createEvent,
   getUploadTemplate,
   getAdminProfile,
   updateStudentByAdmin,
   blockStudent,
   unblockStudent,
-  deleteStudentByAdmin
+  deleteStudentByAdmin,
+  manualAddStudent
 } from '../controllers/adminController';
 import { adminAuth } from '../middlewares/adminAuth';
 
@@ -186,11 +185,11 @@ router.post('/bulk-export', adminAuth, bulkExport);
 router.get('/event/:eventId/attendance', adminAuth, getEventAttendance);
 
 /**
- * @route   POST /api/admin/event/:eventId/add-student
+ * @route   POST /api/admin/event/:eventId/manual-add
  * @desc    Add student to event manually
  * @access  Private (Admin)
  */
-router.post('/event/:eventId/add-student', [
+router.post('/event/:eventId/manual-add', [
   adminAuth,
   body('studentId')
     .isMongoId()
@@ -199,7 +198,7 @@ router.post('/event/:eventId/add-student', [
     .optional()
     .isFloat({ min: 0.5, max: 24 })
     .withMessage('Hours must be between 0.5 and 24')
-], addStudentToEvent);
+], manualAddStudent);
 
 /**
  * @route   POST /api/admin/create-event
