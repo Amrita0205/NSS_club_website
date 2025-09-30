@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import Header from './components/Header'
 import Hero from './components/Hero'
 import About from './components/About'
@@ -21,39 +22,30 @@ export default function HomePage() {
       <Contact />
       <Footer />
     </div>
-  );
+  )
 }
 
 function WelcomeMessage() {
-  if (typeof window === 'undefined') return null as any;
-  // small component; use inline effect without importing React hooks at top-level file
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const ReactRef = require('react');
-  const { useState, useEffect } = ReactRef;
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const [showWelcome, setShowWelcome] = useState(false);
-  const [userType, setUserType] = useState<'student' | 'admin' | null>(null);
-  
-  // eslint-disable-next-line react-hooks/rules-of-hooks
+  const [showWelcome, setShowWelcome] = useState(false)
+  const [userType, setUserType] = useState<'student' | 'admin' | null>(null)
+
   useEffect(() => {
-    const studentToken = localStorage.getItem('student_token');
-    const adminToken = localStorage.getItem('admin_token');
-    
+    const studentToken = localStorage.getItem('student_token')
+    const adminToken = localStorage.getItem('admin_token')
+
     if (studentToken) {
-      setUserType('student');
-      setShowWelcome(true);
-      // Hide welcome message after 5 seconds
-      setTimeout(() => setShowWelcome(false), 5000);
+      setUserType('student')
+      setShowWelcome(true)
+      setTimeout(() => setShowWelcome(false), 5000)
     } else if (adminToken) {
-      setUserType('admin');
-      setShowWelcome(true);
-      // Hide welcome message after 5 seconds
-      setTimeout(() => setShowWelcome(false), 5000);
+      setUserType('admin')
+      setShowWelcome(true)
+      setTimeout(() => setShowWelcome(false), 5000)
     }
-  }, []);
-  
-  if (!showWelcome) return null;
-  
+  }, [])
+
+  if (!showWelcome) return null
+
   return (
     <div className="fixed top-24 left-1/2 transform -translate-x-1/2 z-50 bg-gradient-to-r from-green-600/90 to-blue-600/90 backdrop-blur-md border border-white/20 rounded-2xl p-6 shadow-2xl animate-fade-in">
       <div className="text-center text-white">
@@ -79,5 +71,5 @@ function WelcomeMessage() {
         </div>
       </div>
     </div>
-  );
+  )
 }

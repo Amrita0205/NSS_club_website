@@ -17,6 +17,11 @@ export default function AdminEventsPage() {
   const [token, setToken] = useState<string | null>(null);
 
   // Event form state
+   type EventType = {
+  date: string;
+  isCompleted: boolean;
+  // add other properties as needed
+};
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [date, setDate] = useState('');
@@ -64,8 +69,10 @@ export default function AdminEventsPage() {
         
         // Segregate events by completion status and date
         const now = new Date();
-        const upcoming = allEvents.filter(event => new Date(event.date) > now && !event.isCompleted);
-        const completed = allEvents.filter(event => event.isCompleted || new Date(event.date) <= now);
+       
+
+const upcoming = allEvents.filter((event: EventType) => new Date(event.date) > now && !event.isCompleted);
+const completed = allEvents.filter((event: EventType) => event.isCompleted || new Date(event.date) <= now);
         
         setUpcomingEvents(upcoming);
         setCompletedEvents(completed);

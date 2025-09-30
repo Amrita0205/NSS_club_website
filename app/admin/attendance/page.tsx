@@ -17,6 +17,11 @@ export default function AdminAttendancePage() {
   const [token, setToken] = useState<string | null>(null);
 
   // Events and attendance state
+  type EventType = {
+  date: string;
+  isCompleted: boolean;
+  // add other properties as needed
+};
   const [events, setEvents] = useState<any[]>([]);
   const [upcomingEvents, setUpcomingEvents] = useState<any[]>([]);
   const [completedEvents, setCompletedEvents] = useState<any[]>([]);
@@ -79,8 +84,8 @@ export default function AdminAttendancePage() {
         
         // Segregate events by completion status and date
         const now = new Date();
-        const upcoming = allEvents.filter(event => new Date(event.date) > now && !event.isCompleted);
-        const completed = allEvents.filter(event => event.isCompleted || new Date(event.date) <= now);
+        const upcoming = allEvents.filter((event: EventType) => new Date(event.date) > now && !event.isCompleted);
+const completed = allEvents.filter((event: EventType) => event.isCompleted || new Date(event.date) <= now);
         
         setUpcomingEvents(upcoming);
         setCompletedEvents(completed);
