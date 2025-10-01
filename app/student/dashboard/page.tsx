@@ -276,7 +276,7 @@ export default function StudentDashboard() {
   }
 
   return (
-    <div className="relative min-h-screen bg-black text-white flex flex-col overflow-hidden">
+    <div className="min-h-screen bg-black text-white flex flex-col">
       {/* Background watermark */}
       <div className="pointer-events-none absolute inset-0 flex items-center justify-center -z-10">
         <Image

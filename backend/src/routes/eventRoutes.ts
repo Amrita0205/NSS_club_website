@@ -100,6 +100,13 @@ router.get('/all', getAllEvents);
 router.get('/upcoming', getUpcomingEvents);
 
 /**
+ * @route   GET /api/event/template
+ * @desc    Download attendance template
+ * @access  Private (Admin)
+ */
+router.get('/template', adminAuth, downloadAttendanceTemplate);
+
+/**
  * @route   GET /api/event/:eventId
  * @desc    Get event by ID
  * @access  Public
@@ -153,13 +160,6 @@ router.post('/:eventId/register', studentAuth, studentRegisterForEvent);
  * @access  Private (Student)
  */
 router.post('/:eventId/unregister', studentAuth, studentUnregisterFromEvent);
-
-/**
- * @route   GET /api/event/template
- * @desc    Download attendance template
- * @access  Private (Admin)
- */
-router.get('/template', adminAuth, downloadAttendanceTemplate);
 
 /**
  * @route   POST /api/event/:eventId/bonus-hours

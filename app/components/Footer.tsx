@@ -16,8 +16,8 @@ const Footer = () => {
   ];
 
   const quickLinks = [
-    { name: 'IIIT Raichur', href: 'https://iiitrc.ac.in' },
-    { name: 'PR Council', href: '#' }
+    { name: 'IIIT Raichur', href: 'https://iiitr.ac.in/' },
+    { name: 'PR Council', href: 'https://iiitr.ac.in/prcouncil' }
   ];
 
   return (

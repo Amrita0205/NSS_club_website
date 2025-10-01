@@ -7,11 +7,14 @@ import AdminHeader from '../../components/AdminHeader';
 import { RefreshCw, FileSpreadsheet, Eye, Download, CheckCircle, Users, Calendar, Clock } from 'lucide-react';
 import SplashScreen from '../../components/SplashScreen';
 import { useAppContext } from '../../contexts/AppContext';
+import ToastContainer from '../../components/ToastContainer';
+import { useToast } from '../../hooks/useToast';
 
 export default function AdminAttendancePage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { refreshTrigger, triggerRefresh } = useAppContext();
+  const { toasts, removeToast, showSuccess, showError, showWarning, showInfo } = useToast();
   const [loading, setLoading] = useState(true);
   const [admin, setAdmin] = useState<any>(null);
   const [token, setToken] = useState<string | null>(null);
@@ -30,12 +33,10 @@ export default function AdminAttendancePage() {
   const [attendance, setAttendance] = useState<any>(null);
   const [attendanceLoading, setAttendanceLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [uploadResult, setUploadResult] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<'upcoming' | 'completed'>('upcoming');
   const [manualStudentId, setManualStudentId] = useState<string>('');
   const [manualHours, setManualHours] = useState<number>(0);
   const [addingManual, setAddingManual] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
 
   useEffect(() => {
     const t = localStorage.getItem('admin_token');
@@ -108,7 +109,11 @@ const completed = allEvents.filter((event: EventType) => event.isCompleted || ne
         headers: { ...(token ? { Authorization: `Bearer ${token}` } : {}), 'Content-Type': 'multipart/form-data' },
         timeout: 30000
       });
-      setUploadResult(res.data);
+      if (res.data.success) {
+        showSuccess('Upload Successful', res.data.message);
+      } else {
+        showError('Upload Failed', res.data.message);
+      }
       // refresh attendance if currently viewing
       if (attendanceEventId) {
         try {
@@ -118,7 +123,7 @@ const completed = allEvents.filter((event: EventType) => event.isCompleted || ne
       }
     } catch (error: any) {
       console.error('Error uploading file:', error);
-      setUploadResult({ success: false, message: error.response?.data?.message || 'Upload failed' });
+      showError('Upload Failed', error.response?.data?.message || 'Upload failed');
     } finally {
       setUploading(false);
     }
@@ -131,7 +136,7 @@ const completed = allEvents.filter((event: EventType) => event.isCompleted || ne
 
   const addManualAttendance = async () => {
   if (!attendanceEventId || !manualStudentId || manualHours <= 0) {
-    setMessage('Please fill all fields correctly');
+    showWarning('Validation Error', 'Please fill all fields correctly');
     return;
   }
 
@@ -145,7 +150,7 @@ const completed = allEvents.filter((event: EventType) => event.isCompleted || ne
     );
     const student = studentRes.data?.data?.students?.[0];
     if (!student || !student._id) {
-      setMessage('Student not found');
+      showError('Student Not Found', 'The student with this roll number was not found or is not approved');
       setAddingManual(false);
       return;
     }
@@ -163,7 +168,7 @@ const completed = allEvents.filter((event: EventType) => event.isCompleted || ne
     );
 
     if (res.data.success) {
-      setMessage('Student added to event successfully');
+      showSuccess('Success', 'Student added to event successfully');
       setManualStudentId('');
       setManualHours(0);
       // Refresh attendance data
@@ -177,10 +182,28 @@ const completed = allEvents.filter((event: EventType) => event.isCompleted || ne
       }
       triggerRefresh();
     } else {
-      setMessage(res.data.message || 'Failed to add student');
+      const message = res.data.message || 'Failed to add student';
+      if (message.includes('already attended')) {
+        showWarning('Already Present', message);
+      } else if (message.includes('not approved')) {
+        showWarning('Student Not Approved', message);
+      } else if (message.includes('not found')) {
+        showError('Student Not Found', message);
+      } else {
+        showError('Error', message);
+      }
     }
   } catch (error: any) {
-    setMessage(error.response?.data?.message || 'Failed to add student');
+    const message = error.response?.data?.message || 'Failed to add student';
+    if (message.includes('already attended')) {
+      showWarning('Already Present', message);
+    } else if (message.includes('not approved')) {
+      showWarning('Student Not Approved', message);
+    } else if (message.includes('not found')) {
+      showError('Student Not Found', message);
+    } else {
+      showError('Error', message);
+    }
   } finally {
     setAddingManual(false);
   }
@@ -197,16 +220,16 @@ const completed = allEvents.filter((event: EventType) => event.isCompleted || ne
       });
 
       if (res.data.success) {
-        setMessage('Event marked as completed successfully');
+        showSuccess('Success', 'Event marked as completed successfully');
         // Trigger global refresh
         triggerRefresh();
         // Refresh events list
         void fetchEvents();
       } else {
-        setMessage(res.data.message || 'Failed to mark event as completed');
+        showError('Error', res.data.message || 'Failed to mark event as completed');
       }
     } catch (error: any) {
-      setMessage(error.response?.data?.message || 'Failed to mark event as completed');
+      showError('Error', error.response?.data?.message || 'Failed to mark event as completed');
     }
   };
 
@@ -277,16 +300,6 @@ const completed = allEvents.filter((event: EventType) => event.isCompleted || ne
             </button>
           </div>
 
-          {/* Message Display */}
-          {message && (
-            <div className={`mb-6 p-4 rounded-lg ${
-              message.includes('success') || message.includes('Success')
-                ? 'bg-green-500/20 border border-green-500/30 text-green-300'
-                : 'bg-red-500/20 border border-red-500/30 text-red-300'
-            }`}>
-              {message}
-            </div>
-          )}
 
           {/* Events List */}
           <div className="bg-gray-800/60 rounded-2xl border border-gray-700/50 overflow-hidden mb-6">
@@ -443,22 +456,9 @@ const completed = allEvents.filter((event: EventType) => event.isCompleted || ne
                   />
                   <p className="text-xs text-gray-400 mt-1">Upload file with roll numbers only. Hours will be auto-assigned from event.</p>
                 </div>
-                <div className="flex items-end">
-                  <a
-                    href="/attendance_sample.csv"
-                    download
-                    className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-500 transition-all text-center"
-                  >
-                    <Download className="w-4 h-4 inline mr-2" />
-                    Download Sample CSV
-                  </a>
-                </div>
               </div>
 
               {uploading && <div className="text-gray-300 text-sm mb-4"><RefreshCw className="w-4 h-4 inline animate-spin mr-2"/>Uploading…</div>}
-              {uploadResult && (
-                <div className={`mb-4 p-3 rounded-lg text-sm ${uploadResult.success ? 'bg-green-500/20 border border-green-500/30 text-green-300' : 'bg-red-500/20 border border-red-500/30 text-red-300'}`}>{uploadResult.message}</div>
-              )}
 
               {/* Attendance Display */}
               <div className="bg-gray-700/30 rounded-xl border border-gray-600/50">
@@ -499,10 +499,7 @@ const completed = allEvents.filter((event: EventType) => event.isCompleted || ne
                       </table>
                     </div>
                     <div className="mt-4 text-sm text-gray-400">
-                      Total Attendees: <span className="font-semibold text-white">{attendance.attendance.length}</span> • 
-                      Total Hours Awarded: <span className="font-semibold text-purple-400">
-                        {attendance.attendance.reduce((sum: number, a: any) => sum + a.hoursEarned, 0)}h
-                      </span>
+                      Total Attendees: <span className="font-semibold text-white">{attendance.attendance.length}</span>
                     </div>
                   </div>
                 ) : (
@@ -515,6 +512,7 @@ const completed = allEvents.filter((event: EventType) => event.isCompleted || ne
           )}
         </div>
       </main>
+      <ToastContainer toasts={toasts} onRemoveToast={removeToast} />
     </div>
   );
 }

@@ -247,10 +247,7 @@ export const getEventAttendance = async (req: AuthRequest, res: Response): Promi
         },
         attendance: validAttendance,
         stats: {
-          totalAttendees: validAttendance.length,
-          totalHoursDistributed: validAttendance.reduce(
-            (sum, a) => sum + (a?.hoursEarned || 0), 0
-          )
+          totalAttendees: validAttendance.length
         }
       }
     } as ApiResponse);

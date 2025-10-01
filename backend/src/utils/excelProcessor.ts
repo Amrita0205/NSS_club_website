@@ -110,6 +110,12 @@ export const processAttendanceExcel = async (
         student.addEvent(event._id as mongoose.Types.ObjectId, hours);
         await student.save();
 
+        // Add student to event's attendees list if not already present
+        if (!event.attendees.includes(student._id as mongoose.Types.ObjectId)) {
+          event.attendees.push(student._id as mongoose.Types.ObjectId);
+          await event.save();
+        }
+
         // collect processed student id for notifications
         results.processedStudentIds.push((student._id as any).toString());
 
