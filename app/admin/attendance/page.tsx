@@ -134,76 +134,107 @@ const completed = allEvents.filter((event: EventType) => event.isCompleted || ne
     router.replace('/admin/login');
   };
 
-  const addManualAttendance = async () => {
-  if (!attendanceEventId || !manualStudentId || manualHours <= 0) {
-    showWarning('Validation Error', 'Please fill all fields correctly');
+//   const addManualAttendance = async () => {
+//   if (!attendanceEventId) {
+//     showError("Missing Event", "Please select an event before adding attendance");
+//     return;
+//   }
+
+//   try {
+//     setAddingManual(true);
+
+//     // Find student by roll number
+//     const studentRes = await axios.get(
+//       `http://localhost:5000/api/admin/students?rollNo=${manualStudentId}`,
+//       { headers: { Authorization: `Bearer ${token}` } }
+//     );
+
+//     const student = studentRes.data?.data?.students?.[0];
+//     const studentId = student?._id || student?.id;  // normalize
+
+//     if (!studentId || studentId.length !== 24) {
+//       showError("Invalid Student", "Could not resolve a valid MongoDB student ID");
+//       setAddingManual(false);
+//       return;
+//     }
+
+//     // Send manual attendance
+//     const res = await axios.post(
+//       `http://localhost:5000/api/event/${attendanceEventId}/manual-add`,
+//       { studentId, hours: manualHours },
+//       { headers: { Authorization: `Bearer ${token}` } }
+//     );
+
+//     if (res.data.success) {
+//       showSuccess("Success", "Student added to event successfully");
+//       setManualStudentId("");
+//       setManualHours(0);
+//       triggerRefresh();
+//     } else {
+//       showError("Error", res.data.message || "Failed to add student");
+//     }
+//   } catch (err: any) {
+//     console.error("Manual add failed:", err.response?.data || err);
+//     showError("Error", err.response?.data?.message || "Failed to add student");
+//   } finally {
+//     setAddingManual(false);
+//   }
+// };
+const addManualAttendance = async () => {
+  if (!attendanceEventId) {
+    console.log("❌ No event selected, attendanceEventId is empty");
+    showError("Missing Event", "Please select an event before adding attendance");
     return;
   }
 
   try {
     setAddingManual(true);
 
-    // Step 1: Get student ObjectId from roll number
+    // Step 1: Fetch student by roll number
+    console.log("🔍 Looking up student with rollNo:", manualStudentId);
     const studentRes = await axios.get(
       `http://localhost:5000/api/admin/students?rollNo=${manualStudentId}`,
       { headers: { Authorization: `Bearer ${token}` } }
     );
+
+    console.log("✅ Student API Response:", studentRes.data);
+
     const student = studentRes.data?.data?.students?.[0];
-    if (!student || !student._id) {
-      showError('Student Not Found', 'The student with this roll number was not found or is not approved');
+    const studentId = student?._id || student?.id;
+
+    console.log("👉 Using eventId:", attendanceEventId);
+    console.log("👉 Using studentId:", studentId);
+    console.log("👉 Using hours:", manualHours);
+
+    if (!studentId || studentId.length !== 24) {
+      console.log("❌ Invalid or missing studentId:", studentId);
+      showError("Invalid Student", "Could not resolve a valid MongoDB student ID");
       setAddingManual(false);
       return;
     }
 
-    // Step 2: Add manual attendance using ObjectId
+    // Step 2: Send manual attendance
+    console.log("📤 Sending request to backend...");
     const res = await axios.post(
       `http://localhost:5000/api/event/${attendanceEventId}/manual-add`,
-      {
-        studentId: student._id,
-        hours: manualHours
-      },
-      {
-        headers: { Authorization: `Bearer ${token}` }
-      }
+      { studentId, hours: manualHours },
+      { headers: { Authorization: `Bearer ${token}` } }
     );
 
+    console.log("✅ Backend response:", res.data);
+
     if (res.data.success) {
-      showSuccess('Success', 'Student added to event successfully');
-      setManualStudentId('');
+      showSuccess("Success", "Student added to event successfully");
+      setManualStudentId("");
       setManualHours(0);
-      // Refresh attendance data
-      if (attendanceEventId) {
-        try {
-          const fresh = await axios.get(`http://localhost:5000/api/event/${attendanceEventId}/attendance`, { 
-            headers: { Authorization: `Bearer ${token}` } 
-          });
-          setAttendance(fresh.data?.data || null);
-        } catch {}
-      }
       triggerRefresh();
     } else {
-      const message = res.data.message || 'Failed to add student';
-      if (message.includes('already attended')) {
-        showWarning('Already Present', message);
-      } else if (message.includes('not approved')) {
-        showWarning('Student Not Approved', message);
-      } else if (message.includes('not found')) {
-        showError('Student Not Found', message);
-      } else {
-        showError('Error', message);
-      }
+      console.log("⚠️ Backend returned failure:", res.data.message);
+      showError("Error", res.data.message || "Failed to add student");
     }
-  } catch (error: any) {
-    const message = error.response?.data?.message || 'Failed to add student';
-    if (message.includes('already attended')) {
-      showWarning('Already Present', message);
-    } else if (message.includes('not approved')) {
-      showWarning('Student Not Approved', message);
-    } else if (message.includes('not found')) {
-      showError('Student Not Found', message);
-    } else {
-      showError('Error', message);
-    }
+  } catch (err: any) {
+    console.error("❌ Manual add failed:", err.response?.data || err.message);
+    showError("Error", err.response?.data?.message || "Failed to add student");
   } finally {
     setAddingManual(false);
   }

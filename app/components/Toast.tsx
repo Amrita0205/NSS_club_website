@@ -116,3 +116,4 @@ const Toast: React.FC<ToastProps> = ({ id, type, title, message, duration = 5000
 };
 
 export default Toast;
+
